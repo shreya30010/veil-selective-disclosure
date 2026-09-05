@@ -1,50 +1,53 @@
+# VEIL — Selective Disclosure Workspace
 
-# TypeScript
+VEIL is an AI-powered selective disclosure workspace for journalists and organizations handling sensitive documents. It protects sensitive information without hiding the truth from authorized readers.
 
-[![CI](https://github.com/microsoft/TypeScript/actions/workflows/ci.yml/badge.svg)](https://github.com/microsoft/TypeScript/actions/workflows/ci.yml)
-[![npm version](https://badge.fury.io/js/typescript.svg)](https://www.npmjs.com/package/typescript)
-[![Downloads](https://img.shields.io/npm/dm/typescript.svg)](https://www.npmjs.com/package/typescript)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/microsoft/TypeScript/badge)](https://securityscorecards.dev/viewer/?uri=github.com/microsoft/TypeScript)
+## Main features
 
+* Deterministic privacy scanning for people, email, phone, location, organization, financial, and confidential-source entities.
+* Calculated privacy exposure score with identity, location, contact, financial, and source-exposure risk breakdowns.
+* Disclosure Lens with four roles: Public, Reporter, Editor, and Authorized Investigator.
+* Backend-enforced role policy for both disclosure decisions and transformed document views.
+* Audit log of allowed and blocked category-level disclosure attempts without raw sensitive values.
+* Fictional demo investigation designed to run through scan, lens, access test, and audit review in under two minutes.
 
-[TypeScript](https://www.typescriptlang.org/) is a language for application-scale JavaScript. TypeScript adds optional types to JavaScript that support tools for large-scale JavaScript applications for any browser, for any host, on any OS. TypeScript compiles to readable, standards-based JavaScript. Try it out at the [playground](https://www.typescriptlang.org/play/), and stay up to date via [our blog](https://blogs.msdn.microsoft.com/typescript) and [Twitter account](https://twitter.com/typescript).
+## Architecture
 
-Find others who are using TypeScript at [our community page](https://www.typescriptlang.org/community/).
+* **Frontend:** React + Vite with generated React Query hooks.
+* **Backend:** Express 5 API server.
+* **Contract:** OpenAPI in `lib/api-spec/openapi.yaml`, generating the client and Zod validation schemas.
+* **Storage:** in-memory latest scan and audit log for this MVP. No external AI service or database is required.
 
-## Installing
+## How to run
 
-For the latest stable version:
+The Replit workflows start the API and web app automatically. For a local shell check:
 
 ```bash
-npm install -D typescript
+pnpm install
+pnpm --filter @workspace/api-server run dev
 ```
 
-For our nightly builds:
+The web workflow supplies the required `PORT` and `BASE_PATH` values. For a production-style frontend build:
 
 ```bash
-npm install -D typescript@next
+PORT=21632 BASE_PATH=/ pnpm --filter @workspace/veil run build
 ```
 
-## Contribute
+## How to use the demo
 
-There are many ways to [contribute](https://github.com/microsoft/TypeScript/blob/main/CONTRIBUTING.md) to TypeScript.
-* [Submit bugs](https://github.com/microsoft/TypeScript/issues) and help us verify fixes as they are checked in.
-* Review the [source code changes](https://github.com/microsoft/TypeScript/pulls).
-* Engage with other TypeScript users and developers on [StackOverflow](https://stackoverflow.com/questions/tagged/typescript).
-* Help each other in the [TypeScript Community Discord](https://discord.gg/typescript).
-* Join the [#typescript](https://twitter.com/search?q=%23TypeScript) discussion on Twitter.
-* [Contribute bug fixes](https://github.com/microsoft/TypeScript/blob/main/CONTRIBUTING.md).
+1. Open **Scan document**.
+2. Click **Load demo**, then **Scan document**.
+3. Review detected entities and the calculated privacy exposure score.
+4. Open **Disclosure Lens** and load the demo view.
+5. Switch between Public, Reporter, Editor, and Authorized Investigator.
+6. Test **Confidential source** as Public to see a blocked decision.
+7. Switch to Authorized Investigator and test again to see an allowed decision.
+8. Open **Audit log** to review both decisions without exposing the source value.
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see
-the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com)
-with any additional questions or comments.
+## Security limitations
 
-## Documentation
-
-*  [TypeScript in 5 minutes](https://www.typescriptlang.org/docs/handbook/typescript-in-5-minutes.html)
-*  [Programming handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
-*  [Homepage](https://www.typescriptlang.org/)
-
-## Roadmap
-
-For details on our planned features and future direction, please refer to our [roadmap](https://github.com/microsoft/TypeScript/wiki/Roadmap).
+* The scanner is deterministic pattern matching, not a complete DLP or NLP system.
+* The MVP has no authentication or identity provider.
+* The audit log is in memory and resets when the API process restarts.
+* Demo data is fictional. Do not paste real sensitive documents into an unreviewed prototype deployment.
+* Production use should add authenticated users, durable encrypted storage, retention controls, stronger entity detection, and an independent security review.
