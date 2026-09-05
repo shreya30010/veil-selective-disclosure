@@ -1,0 +1,241 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: veil
+    description: VEIL privacy scanning and disclosure operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /veil/scan:
+    post:
+      operationId: scanDocument
+      tags: [veil]
+      summary: Scan a document for sensitive entities
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanInput"
+      responses:
+        "200":
+          description: Scan result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScanResult"
+        "400":
+          description: Invalid request
+  /veil/disclose:
+    post:
+      operationId: testDisclosure
+      tags: [veil]
+      summary: Test whether a role can disclose an entity category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisclosureInput"
+      responses:
+        "200":
+          description: Disclosure decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DisclosureResult"
+        "400":
+          description: Invalid request
+  /veil/transform:
+    post:
+      operationId: transformDocument
+      tags: [veil]
+      summary: Transform a document for a specific disclosure role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransformInput"
+      responses:
+        "200":
+          description: Role-aware document view
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransformResult"
+        "400":
+          description: Invalid request
+  /veil/audit-log:
+    get:
+      operationId: getAuditLog
+      tags: [veil]
+      summary: Read recent disclosure events
+      responses:
+        "200":
+          description: Recent audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditEvent"
+  /veil/demo:
+    get:
+      operationId: getDemoDocument
+      tags: [veil]
+      summary: Load the fictional VEIL demo investigation
+      responses:
+        "200":
+          description: Fictional demo document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoDocument"
+  /veil/summary:
+    get:
+      operationId: getVeilSummary
+      tags: [veil]
+      summary: Read the current VEIL workspace summary
+      responses:
+        "200":
+          description: Workspace summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VeilSummary"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    EntityType:
+      type: string
+      enum: [PERSON, EMAIL, PHONE, LOCATION, ORGANIZATION, FINANCIAL, CONFIDENTIAL_SOURCE]
+    Role:
+      type: string
+      enum: [PUBLIC, REPORTER, EDITOR, AUTHORIZED_INVESTIGATOR]
+    Severity:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+    SensitiveEntity:
+      type: object
+      required: [id, type, value, label, severity, start, end]
+      properties:
+        id: { type: string }
+        type: { $ref: "#/components/schemas/EntityType" }
+        value: { type: string }
+        label: { type: string }
+        severity: { $ref: "#/components/schemas/Severity" }
+        start: { type: number }
+        end: { type: number }
+    RiskBreakdown:
+      type: object
+      required: [identity, location, contact, financial, sourceExposure]
+      properties:
+        identity: { type: number, minimum: 0, maximum: 100 }
+        location: { type: number, minimum: 0, maximum: 100 }
+        contact: { type: number, minimum: 0, maximum: 100 }
+        financial: { type: number, minimum: 0, maximum: 100 }
+        sourceExposure: { type: number, minimum: 0, maximum: 100 }
+    ScanInput:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
+    ScanResult:
+      type: object
+      required: [documentId, text, entities, exposureScore, exposureLabel, risks, scannedAt]
+      properties:
+        documentId: { type: string }
+        text: { type: string }
+        entities:
+          type: array
+          items: { $ref: "#/components/schemas/SensitiveEntity" }
+        exposureScore: { type: number, minimum: 0, maximum: 100 }
+        exposureLabel: { type: string }
+        risks: { $ref: "#/components/schemas/RiskBreakdown" }
+        scannedAt: { type: string, format: date-time }
+    DisclosureInput:
+      type: object
+      required: [role, resource]
+      properties:
+        role: { $ref: "#/components/schemas/Role" }
+        resource: { $ref: "#/components/schemas/EntityType" }
+    TransformInput:
+      type: object
+      required: [text, role]
+      properties:
+        text: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+    TransformResult:
+      type: object
+      required: [text, role, maskedCount, disclosedCount]
+      properties:
+        text: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        maskedCount: { type: number, minimum: 0 }
+        disclosedCount: { type: number, minimum: 0 }
+    DisclosureResult:
+      type: object
+      required: [allowed, role, resource, result, message, createdAt]
+      properties:
+        allowed: { type: boolean }
+        role: { $ref: "#/components/schemas/Role" }
+        resource: { $ref: "#/components/schemas/EntityType" }
+        result: { type: string }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+    AuditEvent:
+      type: object
+      required: [id, time, role, resource, action, result]
+      properties:
+        id: { type: string }
+        time: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        resource: { $ref: "#/components/schemas/EntityType" }
+        action: { type: string }
+        result: { type: string }
+    DemoDocument:
+      type: object
+      required: [title, subtitle, text, fictional]
+      properties:
+        title: { type: string }
+        subtitle: { type: string }
+        text: { type: string }
+        fictional: { type: boolean }
+    VeilSummary:
+      type: object
+      required: [exposureScore, exposureLabel, entityCount, currentRole, eventCount, lastScanAt]
+      properties:
+        exposureScore: { type: number, minimum: 0, maximum: 100 }
+        exposureLabel: { type: string }
+        entityCount: { type: number, minimum: 0 }
+        currentRole: { $ref: "#/components/schemas/Role" }
+        eventCount: { type: number, minimum: 0 }
+        lastScanAt: { type: ["string", "null"], format: date-time }
+
